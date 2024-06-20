@@ -36,9 +36,11 @@ import org.eclipse.californium.cloud.http.HttpService.ForwardHandler;
 import org.eclipse.californium.cloud.resources.Devices;
 import org.eclipse.californium.cloud.resources.Diagnose;
 import org.eclipse.californium.cloud.resources.MyContext;
+import org.eclipse.californium.cloud.resources.Provisioning;
 import org.eclipse.californium.cloud.util.DeviceGredentialsProvider;
 import org.eclipse.californium.cloud.util.DeviceManager;
 import org.eclipse.californium.cloud.util.DeviceParser;
+import org.eclipse.californium.cloud.util.DeviceProvisioningConsumer;
 import org.eclipse.californium.cloud.util.ResourceStore;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.config.CoapConfig;
@@ -313,6 +315,9 @@ public class BaseServer extends CoapServer {
 
 		@Option(names = "--diagnose", description = "enable 'diagnose'-resource.")
 		public boolean diagnose;
+
+		@Option(names = "--provisioning", description = "enable 'prov'-resource for auto-provisioning.")
+		public boolean provisioning;
 
 		public boolean noCoap;
 
@@ -610,11 +615,11 @@ public class BaseServer extends CoapServer {
 		if (cliArguments.deviceStore != null) {
 			long interval = getConfig().get(DEVICE_CREDENTIALS_RELOAD_INTERVAL, TimeUnit.SECONDS);
 			DeviceParser factory = new DeviceParser(true);
-			ResourceStore<DeviceParser> configResource = new ResourceStore<>(factory).setTag("Devices ");
-			configResource.loadAndCreateMonitor(cliArguments.deviceStore.file, cliArguments.deviceStore.password64,
+			ResourceStore<DeviceParser> deviceCredentialsResource = new ResourceStore<>(factory).setTag("Devices ");
+			deviceCredentialsResource.loadAndCreateMonitor(cliArguments.deviceStore.file, cliArguments.deviceStore.password64,
 					interval > 0);
-			monitors.addMonitor("Devices", interval, TimeUnit.SECONDS, configResource.getMonitor());
-			deviceCredentials = new DeviceManager(configResource, privateKey, publicKey);
+			monitors.addMonitor("Devices", interval, TimeUnit.SECONDS, deviceCredentialsResource.getMonitor());
+			deviceCredentials = new DeviceManager(deviceCredentialsResource, privateKey, publicKey);
 		} else {
 			deviceCredentials = new DeviceManager(null, privateKey, publicKey);
 		}
@@ -718,6 +723,9 @@ public class BaseServer extends CoapServer {
 			add(new Diagnose(this));
 		}
 		add(new Devices(getConfig()));
+		if (cliArguments.provisioning && deviceCredentials instanceof DeviceProvisioningConsumer) {
+			add(new Provisioning((DeviceProvisioningConsumer) deviceCredentials));
+		}
 		add(new MyContext(MyContext.RESOURCE_NAME, CALIFORNIUM_BUILD_VERSION, false));
 	}
 

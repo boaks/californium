@@ -69,9 +69,9 @@ Web-Browser application server diagnose page:
 
 - The footprint of the OS and Java VM, around 800 MB RAM, requires to use at least 2 GB RAM.
 - The maximum number of devices depends mainly on the available RAM. Per PSK around 3K, for certificate based devices 5K.
-- The maximum number of requests per second also depends on the available RAM and CPU for processing. Usually the backend slows down the processing a lot. Without backend, a 4x3GHz System runs 50000 requests/s. With backends, that’s usually much less.
+- The maximum number of requests per second also depends on the available RAM and CPU for processing. Usually the backend slows down the processing a lot. Without backend, a 4x3GHz System with 16 GB RAM runs 50000 requests/s. With backends, that’s usually much less.
 - If S3 is used as backend, usually the write preformance of S3 limits then the number of requests/s. 300 requests/s up to 3000 requests/s could be found.
-- The Javascript Web App is considered only for first steps, Therefore it may handle 100-200 device, it’s not expected to be used with more.    
+- The Javascript Web App is considered only for first steps, Therefore it may handle 100-200 device, it’s not expected to be used with more.
 
 ## General Usage
 

@@ -14,40 +14,22 @@
  ********************************************************************************/
 package org.eclipse.californium.cloud.util;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-
-import javax.security.auth.Destroyable;
-
 /**
- * Resource parser.
+ * Response consumer.
  * 
- * @since 3.12
+ * @since 3.13
  */
-public interface ResourceParser<T extends ResourceParser<T>> extends Destroyable {
+public interface ResponseConsumer {
+
+	final int SUCCESS = 0;
+	final int PROVISIONING_ERROR = 1;
+	final int SERVER_ERROR = 2;
 
 	/**
-	 * Write resource.
+	 * Respond consumer.
 	 * 
-	 * @param writer writer to save resource
-	 * @throws IOException if an I/O error occurred
+	 * @param code responds code.
+	 * @param message diagnose message.
 	 */
-	void save(Writer writer) throws IOException;
-
-	/**
-	 * Load resource.
-	 * 
-	 * @param reader reader for configuration.
-	 * @return number of added entries.
-	 * @throws IOException if an I/O error occurred
-	 */
-	int load(Reader reader) throws IOException;
-
-	/**
-	 * Create resource parser.
-	 * 
-	 * @return created resource parser
-	 */
-	T create();
+	void respond(int code, String message);
 }

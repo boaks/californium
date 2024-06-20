@@ -110,7 +110,7 @@ Examples:
 
 to see the set of options and arguments.
 
-When the server is started the first time, it creates the "CaliforniumCloudDemo3.properties" file. this contains the settings, which may be adjusted by editing this file.
+When the server is started the first time, it creates the "CaliforniumCloudDemo3.properties" file. This contains the settings, which may be adjusted by editing this file.
 
 ```
 # Californium CoAP Properties file for S3 Proxy Server
@@ -164,15 +164,21 @@ PSK credentials are provided with `[<name>].psk=<psk-identity>,<psk-secret>`. If
 ```
 RPK credentials are provided similar with `[<name>].rpk=<public-key>`. The `public-key` is in base64 or with ":0x" in hexadecimal. That `public-key` must also be unique for each device, which will be natural, if a fresh key-pair is generated for each device. RPK requires the server also to load it's private and public key with `--coaps-credentials <dir>`. The directory must contain a `privkey.pem`, and, if that doesn't contain the public key as well, a  `publickey.pem`.
 
-You may either provide that server key pair on your own or create one with:
+You may either provide that server key pair on your own or create a new one using `openssl` with:
 
 ```sh
 openssl ecparam -genkey -name prime256v1 -noout -out privkey.pem
 ```
 
-(The PEM created by that command contains both, the private and the public key. Therefore you need only this one. Other formats or tools may have other results and you may need then two files, one `privkey.pem` and one `publickey.pem`.)
+or
 
-**Note:** the device credentials file is read using UTF-8 encoding, '=' are not supported for device names. Lines starting with '#' are skipped as comment, therefore a device name must not start with a '#'. Empty lines are also skipped. 
+```sh
+openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out privkey.pem
+```
+
+(The later command "supercedes" the firts according the openssl documentation. The PEM created by that commands contains both, the private and the public key. Therefore you need only this one. Other formats or tools may have other results and you may need then two files, one `privkey.pem` and one `publickey.pem`.)
+
+**Note:** the device credentials file is read using UTF-8 encoding, '=' are not supported for device names. Lines starting with '#' are skipped as comment, therefore a device name must not start with a '#'. Empty lines are also skipped.
 
 The cloud demo server checks frequently, if the file has changed and automatically reloads the device credentials.
 
