@@ -12,32 +12,32 @@
  * 
  * SPDX-License-Identifier: EPL-2.0 OR BSD-3-Clause
  ********************************************************************************/
-package org.eclipse.californium.cloud.option;
+package org.eclipse.californium.cloud.s3.option;
 
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.coap.MessageFormatException;
-import org.eclipse.californium.core.coap.option.IntegerOptionDefinition;
 import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.option.IntegerOptionDefinition;
 
 /**
- * CoAP custom option for response code of combined read.
+ * CoAP custom option for response code of combined forwarded request.
  * 
- * @since 3.12
+ * @since 3.13
  */
-public class ReadResponseOption extends Option {
+public class ForwardResponseOption extends Option {
 
 	/**
 	 * Number of custom option.
 	 */
-	public static final int COAP_OPTION_READ_RESPONSE = 0xfdf0;
+	public static final int COAP_OPTION_FORWARD_RESPONSE = 0xfdf8;
 
-	public static final IntegerOptionDefinition DEFINITION = new IntegerOptionDefinition(COAP_OPTION_READ_RESPONSE,
-			"Read_ResponseCode", true, 1, 1) {
+	public static final IntegerOptionDefinition DEFINITION = new IntegerOptionDefinition(COAP_OPTION_FORWARD_RESPONSE,
+			"Forward_ResponseCode", true, 1, 1) {
 
 		@Override
 		public Option create(byte[] value) {
-			return new ReadResponseOption(value);
+			return new ForwardResponseOption(value);
 		}
 
 		@Override
@@ -57,7 +57,7 @@ public class ReadResponseOption extends Option {
 	 * 
 	 * @param code response code
 	 */
-	public ReadResponseOption(int code) {
+	public ForwardResponseOption(int code) {
 		super(DEFINITION, code);
 	}
 
@@ -66,11 +66,11 @@ public class ReadResponseOption extends Option {
 	 * 
 	 * @param code response code
 	 */
-	public ReadResponseOption(ResponseCode code) {
+	public ForwardResponseOption(ResponseCode code) {
 		this(code.value);
 	}
 
-	public ReadResponseOption(byte[] value) {
+	public ForwardResponseOption(byte[] value) {
 		super(DEFINITION, value);
 	}
 

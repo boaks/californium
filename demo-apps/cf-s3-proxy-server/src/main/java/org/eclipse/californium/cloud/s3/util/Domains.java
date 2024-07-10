@@ -14,6 +14,8 @@
  ********************************************************************************/
 package org.eclipse.californium.cloud.s3.util;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Map;
@@ -34,6 +36,8 @@ import org.eclipse.californium.cloud.util.LinuxConfigParser;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.util.StringUtil;
 import org.eclipse.californium.elements.util.SystemResourceMonitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Domains.
@@ -122,7 +126,9 @@ import org.eclipse.californium.elements.util.SystemResourceMonitors;
  * 
  * @since 3.12
  */
-public class Domains implements S3ProxyClientProvider, WebAppUserProvider, WebAppConfigProvider {
+public class Domains implements S3ProxyClientProvider, WebAppUserProvider, WebAppConfigProvider, HttpForwardDestinationProvider {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Domains.class);
 
 	/**
 	 * Section suffix for device data section.
@@ -160,6 +166,10 @@ public class Domains implements S3ProxyClientProvider, WebAppUserProvider, WebAp
 		 * "Single Page Application" configuration store.
 		 */
 		private ResourceStore<LinuxConfigParser> configStore;
+		/**
+		 * Http forward destination.
+		 */
+		private URI httpDestination;
 
 		/**
 		 * Create domain instance.
@@ -211,6 +221,15 @@ public class Domains implements S3ProxyClientProvider, WebAppUserProvider, WebAp
 					s3Config.apply(domainDefinition, section);
 					int max = domainDefinition.getInteger(section, "max_devices", maxDevices);
 					domain.deviceData = S3ProxyServer.createS3Client(s3Config, staleDeviceThreshold, max);
+
+					String destination = domainDefinition.get(section, "http_forward");
+					if (destination != null) {
+						try {
+							domain.httpDestination = new URI(destination);
+						} catch (URISyntaxException e) {
+							LOGGER.warn("Failed to configure http forward '{}' for domain {}.", destination, section);
+						}
+					}
 
 					s3Config = new S3Config();
 					s3Config.concurrency = 5;
@@ -358,6 +377,15 @@ public class Domains implements S3ProxyClientProvider, WebAppUserProvider, WebAp
 		Domain domain = domains.get(domainName);
 		if (domain != null) {
 			return domain.configStore.getResource().get(section, name);
+		}
+		return null;
+	}
+
+	@Override
+	public URI getDestination(String domainName) {
+		Domain domain = domains.get(domainName);
+		if (domain != null) {
+			return domain.httpDestination;
 		}
 		return null;
 	}
