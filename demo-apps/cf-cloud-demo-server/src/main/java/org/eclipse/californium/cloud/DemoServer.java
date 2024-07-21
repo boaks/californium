@@ -19,6 +19,7 @@ import java.io.File;
 import org.eclipse.californium.cloud.BaseServer.ServerConfig;
 import org.eclipse.californium.cloud.option.TimeOption;
 import org.eclipse.californium.core.coap.option.MapBasedOptionRegistry;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.elements.config.Configuration;
 
@@ -55,7 +56,7 @@ public class DemoServer {
 
 	public static void main(String[] args) {
 		MapBasedOptionRegistry registry = new MapBasedOptionRegistry(StandardOptionRegistry.getDefaultOptionRegistry(),
-				TimeOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION);
+				TimeOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION, TransmissionCountOption.DEFINITION);
 		StandardOptionRegistry.setDefaultOptionRegistry(registry);
 		Configuration configuration = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, BaseServer.DEFAULTS);
 		BaseServer.start(args, DemoServer.class.getSimpleName(), new Config(), new BaseServer(configuration));
