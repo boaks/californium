@@ -47,8 +47,10 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.MessageObserverAdapter;
+import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.coap.Response;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.Exchange;
 import org.eclipse.californium.elements.EndpointContext;
@@ -124,6 +126,7 @@ public class ReliabilityLayer extends AbstractLayer {
 					LOGGER.debug("{} send request, failed transmissions: {}", exchange,
 							exchange.getFailedTransmissionCount());
 					updateRetransmissionTimeout(exchange, getReliabilityLayerParameters());
+					TransmissionCountOption.increment(request);
 					lower().sendRequest(exchange, request);
 				}
 			});
@@ -180,7 +183,12 @@ public class ReliabilityLayer extends AbstractLayer {
 		if (respType == Type.ACK || respType == Type.RST) {
 			response.setMID(currentRequest.getMID());
 		}
-
+		if (respType == Type.ACK) {
+			if (TransmissionCountOption.transcribe(currentRequest, response)) {
+				LOGGER.trace("{} response {}", exchange,
+						response.getOptions().getOtherOption(TransmissionCountOption.DEFINITION));
+			}
+		}
 		if (respType == Type.CON) {
 			LOGGER.debug("{} prepare retransmission for {}", exchange, response);
 			prepareRetransmission(exchange, new RetransmissionTask(exchange, response) {
@@ -227,6 +235,10 @@ public class ReliabilityLayer extends AbstractLayer {
 	 */
 	@Override
 	public void receiveRequest(Exchange exchange, Request request) {
+		Option option = request.getOptions().getOtherOption(TransmissionCountOption.DEFINITION);
+		if (option != null) {
+			LOGGER.trace("{} request {}", exchange, option);
+		}
 
 		if (request.isDuplicate()) {
 			Response previousResponse = exchange.getCurrentResponse();
@@ -278,6 +290,11 @@ public class ReliabilityLayer extends AbstractLayer {
 						// notifications are kept in the exchange store, so
 						// prepare retransmission counter for retransmission
 						exchange.incrementFailedTransmissionCount();
+					}
+				} else if (type == Type.ACK) {
+					if (TransmissionCountOption.transcribe(request, previousResponse)) {
+						LOGGER.trace("{} udpated response {}", exchange,
+								previousResponse.getOptions().getOtherOption(TransmissionCountOption.DEFINITION));
 					}
 				}
 				LOGGER.debug("{} respond with the current response to the duplicate request", exchange);
@@ -613,8 +630,8 @@ public class ReliabilityLayer extends AbstractLayer {
 				} else {
 					int failedCount = exchange.incrementFailedTransmissionCount();
 					if (failedCount == 1) {
-						EndpointContext context = EndpointContextUtil
-								.getFollowUpEndpointContext(message.getDestinationContext(), exchange.getEndpointContext());
+						EndpointContext context = EndpointContextUtil.getFollowUpEndpointContext(
+								message.getDestinationContext(), exchange.getEndpointContext());
 						message.setEffectiveDestinationContext(context);
 					}
 					LOGGER.debug("Timeout: for {} retry {} of {}", exchange, failedCount, message);
