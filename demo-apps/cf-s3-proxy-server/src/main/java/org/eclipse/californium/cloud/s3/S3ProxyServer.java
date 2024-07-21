@@ -58,6 +58,7 @@ import org.eclipse.californium.cloud.util.ResourceStore;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.option.MapBasedOptionRegistry;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
@@ -326,7 +327,8 @@ public class S3ProxyServer extends BaseServer {
 	public static void main(String[] args) {
 		MapBasedOptionRegistry registry = new MapBasedOptionRegistry(StandardOptionRegistry.getDefaultOptionRegistry(),
 				TimeOption.DEFINITION, ReadEtagOption.DEFINITION, ReadResponseOption.DEFINITION,
-				IntervalOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION);
+				IntervalOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION,
+				TransmissionCountOption.DEFINITION);
 		StandardOptionRegistry.setDefaultOptionRegistry(registry);
 
 		Configuration configuration = Configuration.createWithFile(CONFIG_FILE, CONFIG_HEADER, DEFAULTS);
