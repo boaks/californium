@@ -15,7 +15,7 @@
 
 'use strict';
 
-const version = "Version 2 0.24.0, 8. October 2024";
+const version = "Version 2 0.24.1, 13. October 2024";
 
 let timeShift = 0;
 
@@ -518,7 +518,7 @@ class S3Request {
 					"x-amz-date": now,
 				},
 				mode: 'cors',
-				cache: 'no-cache',
+				cache: 'no-store',
 			});
 			if (etag) {
 				request.headers.set("If-None-Match", etag);
@@ -1295,6 +1295,7 @@ class DeviceData {
 	config = null;
 	configTime = null;
 
+	lastArchDayMessage = null;
 	lastArchMessage = null;
 
 	loaded = new Map();
@@ -1625,8 +1626,9 @@ class DeviceData {
 						message = message.addTo(this.allMessages);
 						message.parseValues();
 						if (arch) {
-							if (!this.lastArchMessage || this.lastArchMessage.time < message.time) {
-								this.lastArchMessage = message;
+							if (!this.lastArchDayMessage || this.lastArchDayMessage.time < message.time) {
+								this.lastArchDayMessage = message;
+								this.lastArchDayMessage.key = msgKey;
 							}
 						}
 					}
@@ -1643,35 +1645,54 @@ class DeviceData {
 		return message;
 	}
 
-	async downloadArchDay(tag, date, allJobs) {
-		console.log("Append " + tag + date)
-		let list = await s3.fetchXmlList(this.key + date + "/");
+	async downloadArchDay(tag, date, lastKey, allJobs) {
+		if (lastKey) {
+			console.log("Append " + tag + date + " after " + lastKey.slice(-12));
+		} else {
+			console.log("Append " + tag + date)
+		}
+		let list = await s3.fetchXmlList(this.key + date + "/", lastKey);
 		list.xml.querySelectorAll("Contents>Key").forEach((e) => {
 			allJobs.push(this.downloadMessage(e.textContent, true));
 		});
 	}
 
-	async downloadArchDays(to, lastMessage, allJobs) {
-		if (lastMessage) {
-			const jobs = new Array();
-			let i = 1;
-			let last = lastMessage.time;
-			while (last < to && i < 8) {
-				last += dayInMillis;
-				const date = new Date(last).toISOString().slice(0, 10);
-				const tag = i <= 1 ? "day " : i + ". day ";
-				jobs.push(this.downloadArchDay(tag, date, allJobs));
-				++i;
-			}
-			await Promise.allSettled(jobs);
-			console.log("arch loaded " + jobs.length + " days.");
-		} else {
-			let time = Date.now();
-			let date = new Date(time).toISOString().slice(0, 10);
-			await this.downloadArchDay("day ", date, allJobs);
-			date = new Date(time -= dayInMillis).toISOString().slice(0, 10);
-			await this.downloadArchDay("2. day ", date, allJobs);
+	async downloadArchDays(to, allJobs) {
+		let lastKey = null;
+		let last = 0;
+		if (this.lastArchDayMessage) {
+			last = this.lastArchDayMessage.time;
+			lastKey = this.lastArchDayMessage.key;
 		}
+		if (this.lastArchMessage) {
+			const arch = new Date(this.lastArchMessage.time);
+			arch.setUTCHours(0);
+			arch.setUTCMinutes(0);
+			arch.setUTCSeconds(0);
+			arch.setUTCMilliseconds(0);
+			const nextDay = arch.getTime() + dayInMillis;
+			if (last < nextDay) {
+				last = nextDay;
+				lastKey = null;
+			}
+		}
+		if (!last) {
+			to ??= Date.now();
+			last = to - (dayInMillis * 3);
+		}
+		console.log("Days from " + new Date(last).toISOString() + " to " + new Date(to).toISOString());
+		const jobs = new Array();
+		let i = 1;
+		while (last < to && i < 8) {
+			const date = new Date(last).toISOString().slice(0, 10);
+			const tag = i <= 1 ? "day " : i + ". day ";
+			jobs.push(this.downloadArchDay(tag, date, lastKey, allJobs));
+			last += dayInMillis;
+			lastKey = null;
+			++i;
+		}
+		await Promise.allSettled(jobs);
+		console.log("arch loaded " + jobs.length + " days.");
 	}
 
 	async downloadArch(archKey, force, to, allJobs) {
@@ -1701,18 +1722,20 @@ class DeviceData {
 				}
 				const newEtag = download.headers.get("etag") ?? (etag ?? "");
 				this.loaded.set(archKey, newEtag);
-
-				if (to) {
-					let start = newMessages.at(-1);
-					if (this.lastArchMessage) {
-						if (!start || start.time < this.lastArchMessage.time) {
-							start = this.lastArchMessage
+				if (newMessages) {
+					const last = newMessages.at(-1);
+					if (last) {
+						if (!this.lastArchMessage || this.lastArchMessage.time < last.time) {
+							this.lastArchMessage = last;
 						}
 					}
-					await this.downloadArchDays(to, start, allJobs);
 				}
 			} else if (download.status != 304) {
 				console.log("Missing payload " + archKey);
+				to = false;
+			}
+			if (to) {
+				await this.downloadArchDays(to, allJobs);
 			}
 		} else {
 			console.log("Cache " + archKey + " " + etag);
@@ -1938,7 +1961,7 @@ class DeviceData {
 				}
 			} else {
 				range = new DateRange(null, lastValues, center, days, true);
-				await this.downloadArchDays(range.to, null, allJobs);
+				await this.downloadArchDays(range.to, allJobs);
 			}
 			return this.loadData(allJobs, range, readConfig);
 		} else {
