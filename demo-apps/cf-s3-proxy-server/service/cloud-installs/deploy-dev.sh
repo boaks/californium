@@ -120,7 +120,7 @@ fi
 echo "S3: ${s3bucket}"
 
 # Version to deploy
-: "${CALI_VERSION=3.12.0-SNAPSHOT}"
+: "${CALI_VERSION=4.0.0-SNAPSHOT}"
 
 # ssh login user
 : "${user=root}"
