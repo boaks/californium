@@ -21,6 +21,7 @@ import org.eclipse.californium.cloud.option.TimeOption;
 import org.eclipse.californium.core.coap.option.MapBasedOptionRegistry;
 import org.eclipse.californium.core.coap.option.OptionRegistry;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.elements.config.Configuration;
 
 import picocli.CommandLine.ArgGroup;
@@ -72,7 +73,7 @@ public class DemoServer {
 	public static void main(String[] args) {
 		OptionRegistry registry = MapBasedOptionRegistry.builder()
 				.add(StandardOptionRegistry.getDefaultOptionRegistry())
-				.add(TimeOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION)
+				.add(TimeOption.DEFINITION, TimeOption.DEPRECATED_DEFINITION, TransmissionCountOption.DEFINITION)
 				.build();
 
 		StandardOptionRegistry.setDefaultOptionRegistry(registry);

@@ -73,6 +73,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.option.MapBasedOptionRegistry;
 import org.eclipse.californium.core.coap.option.OptionRegistry;
 import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.elements.config.CertificateAuthenticationMode;
 import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.elements.config.Configuration.DefinitionsProvider;
@@ -462,7 +463,7 @@ public class S3ProxyServer extends BaseServer {
 		OptionRegistry registry = MapBasedOptionRegistry.builder()
 				.add(StandardOptionRegistry.getDefaultOptionRegistry()).add(ServerCustomOptions.CUSTOM)
 				.add(S3ProxyCustomOptions.CUSTOM)
-				.add(TimeOption.DEPRECATED_DEFINITION).build();
+				.add(TimeOption.DEPRECATED_DEFINITION, TransmissionCountOption.DEFINITION).build();
 
 		StandardOptionRegistry.setDefaultOptionRegistry(registry);
 

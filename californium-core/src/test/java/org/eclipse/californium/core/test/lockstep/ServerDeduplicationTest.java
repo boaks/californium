@@ -43,6 +43,10 @@ import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.coap.Token;
+import org.eclipse.californium.core.coap.option.MapBasedOptionRegistry;
+import org.eclipse.californium.core.coap.option.OptionRegistry;
+import org.eclipse.californium.core.coap.option.StandardOptionRegistry;
+import org.eclipse.californium.core.coap.option.TransmissionCountOption;
 import org.eclipse.californium.core.config.CoapConfig;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
@@ -72,6 +76,7 @@ public class ServerDeduplicationTest {
 	@ClassRule
 	public static CoapThreadsRule cleanup = new CoapThreadsRule();
 
+	private static final TransmissionCountOption.Definition DEFINITION = TransmissionCountOption.DEFINITION;
 	private static final int DEDUPLICATOR_SWEEP_INTERVAL = 200; // ms
 	private static final String resourceName = "test";
 	private static final String payload = "hello there ";
@@ -84,6 +89,10 @@ public class ServerDeduplicationTest {
 
 	@BeforeClass
 	public static void setupServer() throws Exception {
+		OptionRegistry registry = MapBasedOptionRegistry.builder()
+				.add(StandardOptionRegistry.getDefaultOptionRegistry())
+				.add(TransmissionCountOption.DEFINITION).build();
+		StandardOptionRegistry.setDefaultOptionRegistry(registry);
 
 		Configuration config = network.getStandardTestConfig()
 				.set(CoapConfig.DEDUPLICATOR, CoapConfig.DEDUPLICATOR_MARK_AND_SWEEP)
@@ -164,17 +173,17 @@ public class ServerDeduplicationTest {
 		Token token = Token.fromProvider(new byte[] { 0x00, 0x00 });
 		int mid = 1234;
 
-		client.sendRequest(CON, GET, token, mid).path(resourceName).go();
+		client.sendRequest(CON, GET, token, mid).path(resourceName).otherOption(DEFINITION.create(1)).go();
 		// server will send response but response is lost
 		// even then, the response must be read from lockstep client,
 		// otherwise the 2. expect will just read the first response!
-		client.expectResponse(ACK, CONTENT, token, mid).payload(payload + "1").go();
+		client.expectResponse(ACK, CONTENT, token, mid).payload(payload + "1").option(DEFINITION.create(1)).go();
 
 		Thread.sleep(DEDUPLICATOR_SWEEP_INTERVAL / 2);
 
 		// caused by the lost response, client re-transmits request
-		client.sendRequest(CON, GET, token, mid).path(resourceName).go();
-		client.expectResponse(ACK, CONTENT, token, mid).payload(payload + "1").go();
+		client.sendRequest(CON, GET, token, mid).path(resourceName).otherOption(DEFINITION.create(2)).go();
+		client.expectResponse(ACK, CONTENT, token, mid).payload(payload + "1").option(DEFINITION.create(2)).go();
 
 		// new client request
 		client.sendRequest(CON, GET, token, ++mid).path(resourceName).go();
@@ -265,4 +274,5 @@ public class ServerDeduplicationTest {
 		// no more messages
 		assertThat(client.receiveNextMessage(500, TimeUnit.MILLISECONDS), is(nullValue()));
 	}
+
 }

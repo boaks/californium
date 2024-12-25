@@ -2254,6 +2254,26 @@ public final class OptionSet {
 	}
 
 	/**
+	 * Set other option.
+	 * <p>
+	 * Removes all previously added options with the same
+	 * {@link OptionDefinition} before.
+	 * 
+	 * @param option the Option object to set
+	 * @return this OptionSet for a fluent API.
+	 * @throws NullPointerException if option is {@code null}.
+	 * @since 4.0
+	 */
+	public OptionSet setOtherOption(Option option) {
+		if (option == null) {
+			throw new NullPointerException("Option must not be null!");
+		}
+		clearOtherOption(option.getDefinition());
+		addOrdered(getOthersInternal(), option);
+		return this;
+	}
+
+	/**
 	 * Clear other option by value.
 	 * <p>
 	 * <b>Note:</b> the removing is based on {@link Option#equals(Object)},
